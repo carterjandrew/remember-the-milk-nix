@@ -4,7 +4,7 @@
   fetchurl,
   dpkg,
   autoPatchelfHook,
-  makeWrapper,
+  makeShellWrapper,
   alsa-lib,
   at-spi2-core,
   cairo,
@@ -17,7 +17,7 @@
   libdrm,
   libsecret,
   libxkbcommon,
-  mesa,
+  libgbm,
   nspr,
   nss,
   pango,
@@ -44,7 +44,7 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     autoPatchelfHook
     dpkg
-    makeWrapper
+    makeShellWrapper
   ];
 
   buildInputs = [
@@ -58,13 +58,12 @@ stdenv.mkDerivation (finalAttrs: {
     glib
     gtk3
     libdrm
-    libsecret
     libxkbcommon
-    mesa
+    libgbm
     nspr
     nss
     pango
-    stdenv.cc.cc.lib
+    (lib.getLib stdenv.cc.cc)
     libx11
     libxcomposite
     libxdamage
@@ -75,11 +74,9 @@ stdenv.mkDerivation (finalAttrs: {
     libxshmfence
   ];
 
-  unpackPhase = ''
-    runHook preUnpack
-    dpkg-deb --extract "$src" .
-    runHook postUnpack
-  '';
+  # libsecret is loaded dynamically by Electron and therefore does not appear
+  # in the executable's ELF dependencies for autoPatchelf to discover.
+  runtimeDependencies = [ (lib.getLib libsecret) ];
 
   installPhase = ''
     runHook preInstall
@@ -98,9 +95,8 @@ stdenv.mkDerivation (finalAttrs: {
     substituteInPlace "$out/share/applications/rememberthemilk.desktop" \
       --replace-fail "/opt/RememberTheMilk/rememberthemilk" "rememberthemilk"
 
-    makeWrapper "$out/opt/RememberTheMilk/rememberthemilk" "$out/bin/rememberthemilk" \
-      --prefix PATH : ${lib.makeBinPath [ xdg-utils ]} \
-      --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libsecret ]}
+    makeShellWrapper "$out/opt/RememberTheMilk/rememberthemilk" "$out/bin/rememberthemilk" \
+      --prefix PATH : ${lib.makeBinPath [ xdg-utils ]}
 
     runHook postInstall
   '';
