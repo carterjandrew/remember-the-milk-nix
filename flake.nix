@@ -1,10 +1,17 @@
 {
   description = "Remember The Milk desktop application for Nix";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+
+    nixgl = {
+      url = "github:nix-community/nixGL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
 
   outputs =
-    { self, nixpkgs }:
+    { self, nixpkgs, nixgl }:
     let
       supportedSystems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -25,6 +32,16 @@
         in
         {
           inherit (pkgs) remember-the-milk;
+
+          remember-the-milk-nixgl = pkgs.writeShellApplication {
+            name = "rememberthemilk-nixgl";
+            runtimeInputs = [ nixgl.packages.${system}.nixGLIntel ];
+            text = ''
+              exec nixGLIntel ${nixpkgs.lib.getExe pkgs.remember-the-milk} "$@"
+            '';
+            meta.description = "Remember The Milk with nixGL for non-NixOS Mesa systems";
+          };
+
           default = pkgs.remember-the-milk;
         }
       );
@@ -33,16 +50,66 @@
         system:
         let
           package = self.packages.${system}.remember-the-milk;
-          app = {
+          mkApp = package': {
             type = "app";
-            program = nixpkgs.lib.getExe package;
-            meta = package.meta;
+            program = nixpkgs.lib.getExe package';
+            meta = package'.meta;
           };
+          app = mkApp package;
         in
         {
           remember-the-milk = app;
+          nixgl = mkApp self.packages.${system}.remember-the-milk-nixgl;
           default = app;
         }
       );
+
+      nixosModules.default = import ./nixos-module.nix;
+
+      nixosConfigurations.rtm-vm = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          self.nixosModules.default
+          (
+            {
+              config,
+              lib,
+              pkgs,
+              ...
+            }:
+            {
+              nixpkgs.config.allowUnfree = true;
+
+              programs.remember-the-milk.enable = true;
+              programs.sway = {
+                enable = true;
+                extraPackages = [ pkgs.foot ];
+              };
+
+              services.greetd = {
+                enable = true;
+                settings = {
+                  default_session = {
+                    command = lib.getExe config.programs.sway.package;
+                    user = "rtm";
+                  };
+                };
+              };
+
+              users.users.rtm = {
+                isNormalUser = true;
+              };
+
+              virtualisation.vmVariant.virtualisation = {
+                memorySize = 2048;
+                cores = 2;
+                graphics = true;
+              };
+
+              system.stateVersion = "26.05";
+            }
+          )
+        ];
+      };
     };
 }

@@ -104,10 +104,7 @@ stdenv.mkDerivation (finalAttrs: {
     substituteInPlace "$out/share/applications/rememberthemilk.desktop" \
       --replace-fail "/opt/RememberTheMilk/rememberthemilk" "rememberthemilk"
 
-    # Electron 13's GPU seccomp policy is incompatible with current kernels.
-    # Disable only the GPU sandbox; the renderer sandbox remains enabled.
     makeShellWrapper "$out/opt/RememberTheMilk/rememberthemilk" "$out/bin/rememberthemilk" \
-      --add-flags "--disable-gpu-sandbox" \
       --prefix PATH : ${lib.makeBinPath [ xdg-utils ]}
 
     runHook postInstall
