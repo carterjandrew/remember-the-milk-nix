@@ -94,6 +94,10 @@ stdenv.mkDerivation (finalAttrs: {
     cp -r opt/RememberTheMilk "$out/opt/"
     cp -r usr/share/applications usr/share/icons usr/share/pixmaps "$out/share/"
 
+    install -Dm644 -t "$out/share/licenses/${finalAttrs.pname}/" \
+      opt/RememberTheMilk/LICENSE.electron.txt \
+      opt/RememberTheMilk/LICENSES.chromium.html
+
     # The upstream package's 0x0 icon is a dangling symlink to a directory
     # that is not included in the Debian archive. Install the bundled 512x512
     # icon in the standard hicolor location instead.
