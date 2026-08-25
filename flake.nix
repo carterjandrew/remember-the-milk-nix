@@ -46,23 +46,23 @@
         }
       );
 
-      apps = forAllSystems (
-        system:
-        let
-          package = self.packages.${system}.remember-the-milk;
-          mkApp = package': {
-            type = "app";
-            program = nixpkgs.lib.getExe package';
-            meta = package'.meta;
-          };
-          app = mkApp package;
-        in
-        {
-          remember-the-milk = app;
-          nixgl = mkApp self.packages.${system}.remember-the-milk-nixgl;
-          default = app;
-        }
-      );
+			apps = forAllSystems (
+  		  system:
+  		  let
+  		    packages = self.packages.${system};
+
+  		    mkApp = package: {
+  		      type = "app";
+  		      program = nixpkgs.lib.getExe package;
+  		      meta = package.meta;
+  		    };
+  		  in
+  		  {
+  		    remember-the-milk = mkApp packages.remember-the-milk;
+  		    nixgl = mkApp packages.remember-the-milk-nixgl;
+  		    default = mkApp packages.remember-the-milk;
+  		  }
+  		);
 
       nixosModules.default = import ./nixos-module.nix;
 
@@ -71,12 +71,7 @@
         modules = [
           self.nixosModules.default
           (
-            {
-              config,
-              lib,
-              pkgs,
-              ...
-            }:
+            { config, lib, pkgs, ... }:
             {
               nixpkgs.config.allowUnfree = true;
 
