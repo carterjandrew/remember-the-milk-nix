@@ -15,6 +15,7 @@
   glib,
   gtk3,
   libdrm,
+  libGL,
   libsecret,
   libxkbcommon,
   libgbm,
@@ -30,6 +31,7 @@
   libxrandr,
   libxcb,
   libxshmfence,
+  systemd,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -74,9 +76,16 @@ stdenv.mkDerivation (finalAttrs: {
     libxshmfence
   ];
 
-  # libsecret is loaded dynamically by Electron and therefore does not appear
-  # in the executable's ELF dependencies for autoPatchelf to discover.
-  runtimeDependencies = [ (lib.getLib libsecret) ];
+  # These libraries are loaded dynamically by the Electron executable and
+  # therefore do not appear in its ELF dependencies for autoPatchelf to find.
+  runtimeDependencies = map lib.getLib [
+    libsecret
+    systemd
+  ];
+
+  # Electron's bundled EGL library loads libGL dynamically. Unlike
+  # runtimeDependencies, appendRunpaths also applies to shared libraries.
+  appendRunpaths = [ "${lib.getLib libGL}/lib" ];
 
   installPhase = ''
     runHook preInstall
@@ -95,7 +104,10 @@ stdenv.mkDerivation (finalAttrs: {
     substituteInPlace "$out/share/applications/rememberthemilk.desktop" \
       --replace-fail "/opt/RememberTheMilk/rememberthemilk" "rememberthemilk"
 
+    # Electron 13's GPU seccomp policy is incompatible with current kernels.
+    # Disable only the GPU sandbox; the renderer sandbox remains enabled.
     makeShellWrapper "$out/opt/RememberTheMilk/rememberthemilk" "$out/bin/rememberthemilk" \
+      --add-flags "--disable-gpu-sandbox" \
       --prefix PATH : ${lib.makeBinPath [ xdg-utils ]}
 
     runHook postInstall
