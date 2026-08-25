@@ -21,13 +21,18 @@ AI-assisted tools were used extensively while investigating runtime issues and d
 From a checkout of this repository, the normal launcher is:
 
 ```console
-nix run .
+nix run
 ```
 
 You can also build the package without launching it:
 
 ```console
-nix build .
+nix build
+```
+
+Then run it with:
+
+```console
 ./result/bin/rememberthemilk
 ```
 
@@ -39,15 +44,15 @@ Applications packaged by Nix cannot normally find graphics drivers installed by 
 nix run .#nixgl
 ```
 
-The normal package does not force nixGL or disable Electron's GPU sandbox. Use the nixGL launcher only when the host graphics stack requires it. The provided launcher is not intended for proprietary NVIDIA drivers.
+The provided launcher is not intended for proprietary NVIDIA drivers.
 
 ## Using the NixOS module
 
-Add this repository as an input to your system flake. Replace the example URL with the eventual location of this repository:
+Add this repository as an input to your system flake:
 
 ```nix
 {
-  inputs.remember-the-milk.url = "github:OWNER/REPOSITORY";
+  inputs.remember-the-milk.url = "github:carterjandrew/remember-the-milk-nixos";
 
   outputs = { nixpkgs, remember-the-milk, ... }: {
     nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
@@ -64,8 +69,6 @@ Add this repository as an input to your system flake. Replace the example URL wi
 }
 ```
 
-The module also has a `programs.remember-the-milk.package` option if you need to supply a customized package.
-
 ## Using the overlay
 
 The overlay adds `remember-the-milk` to a Nixpkgs package set. This is useful when you want to reference it as `pkgs.remember-the-milk` without using the NixOS module:
@@ -81,6 +84,24 @@ The overlay adds `remember-the-milk` to a Nixpkgs package set. This is useful wh
 }
 ```
 
+## Changing the base package
+
+The module also has a `package` option if you need to supply a customized package.
+
+```nix
+      modules = [
+        remember-the-milk.nixosModules.default
+        {
+          nixpkgs.config.allowUnfree = true;
+          nixpkgs.overlays = [ remember-the-milk.overlays.default ];
+          programs.remember-the-milk = {
+            enable = true;
+            package = pkgs.remember-the-milk;
+          };
+        }
+      ];
+```
+
 ## Testing in a NixOS VM
 
 The flake includes a lightweight Sway VM with Remember The Milk installed:
@@ -94,10 +115,6 @@ The VM automatically logs in to Sway. Press `Super+Enter` to open Foot, then run
 ```console
 rememberthemilk
 ```
-
-The QEMU runner remains attached to the terminal for as long as the VM is running. Exit Sway with `Super+Shift+E`, shut down the guest, or press `Ctrl+C` in the host terminal to stop it. The runner may create a reusable `nixos.qcow2` disk image in the current directory.
-
-The VM uses the NixOS graphics environment directly; it does not use nixGL. Its virtual GPU is useful for testing package and desktop integration, but it is not representative of physical GPU performance.
 
 ## Legacy `nix-build`
 
