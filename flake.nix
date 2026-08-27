@@ -13,7 +13,10 @@
   outputs =
     { self, nixpkgs, nixgl }:
     let
-      supportedSystems = [ "x86_64-linux" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "i686-linux"
+      ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
     in
     {
@@ -32,7 +35,9 @@
         in
         {
           inherit (pkgs) remember-the-milk;
-
+          default = pkgs.remember-the-milk;
+        }
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
           remember-the-milk-nixgl = pkgs.writeShellApplication {
             name = "rememberthemilk-nixgl";
             runtimeInputs = [ nixgl.packages.${system}.nixGLIntel ];
@@ -41,28 +46,28 @@
             '';
             meta.description = "Remember The Milk with nixGL for non-NixOS Mesa systems";
           };
-
-          default = pkgs.remember-the-milk;
         }
       );
 
-			apps = forAllSystems (
-  		  system:
-  		  let
-  		    packages = self.packages.${system};
+      apps = forAllSystems (
+        system:
+        let
+          packages = self.packages.${system};
 
-  		    mkApp = package: {
-  		      type = "app";
-  		      program = nixpkgs.lib.getExe package;
-  		      meta = package.meta;
-  		    };
-  		  in
-  		  {
-  		    remember-the-milk = mkApp packages.remember-the-milk;
-  		    nixgl = mkApp packages.remember-the-milk-nixgl;
-  		    default = mkApp packages.remember-the-milk;
-  		  }
-  		);
+          mkApp = package: {
+            type = "app";
+            program = nixpkgs.lib.getExe package;
+            meta = package.meta;
+          };
+        in
+        {
+          remember-the-milk = mkApp packages.remember-the-milk;
+          default = mkApp packages.remember-the-milk;
+        }
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          nixgl = mkApp packages.remember-the-milk-nixgl;
+        }
+      );
 
       nixosModules.default = import ./nixos-module.nix;
 

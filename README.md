@@ -1,8 +1,8 @@
 # Remember The Milk for Nix
 
-This repository packages the [Remember The Milk](https://www.rememberthemilk.com/) desktop application for Nix. It repackages the upstream 64-bit Debian release and provides a Nix package, runnable flake apps, an overlay, a NixOS module, and a small NixOS VM for testing.
+This repository packages the [Remember The Milk](https://www.rememberthemilk.com/) desktop application for Nix. It repackages the upstream Debian releases and provides a Nix package, runnable flake apps, an overlay, a NixOS module, and a small NixOS VM for testing.
 
-This is an unofficial package. Remember The Milk is proprietary software, so unfree packages must be allowed. Only `x86_64-linux` is supported because that is the architecture provided by the upstream application.
+This is an unofficial package. Remember The Milk is proprietary software, so unfree packages must be allowed. The upstream application provides packages for both `x86_64-linux` and `i686-linux`.
 
 ## Licensing
 
@@ -44,7 +44,7 @@ Applications packaged by Nix cannot normally find graphics drivers installed by 
 nix run .#nixgl
 ```
 
-The provided launcher is not intended for proprietary NVIDIA drivers.
+The provided launcher is available on `x86_64-linux` and is not intended for proprietary NVIDIA drivers.
 
 ## Using the NixOS module
 
