@@ -38,10 +38,26 @@ stdenv.mkDerivation (finalAttrs: {
   pname = "remember-the-milk";
   version = "1.3.11";
 
-  src = fetchurl {
-    url = "https://www.rememberthemilk.com/download/linux/debian/pool/main/r/rememberthemilk/rememberthemilk_${finalAttrs.version}_amd64.deb";
-    hash = "sha256-31xx1csNPwXWS2VNIWbKqgtDXtzJdBLUWA6VZ5nxHds=";
-  };
+  src =
+    let
+      sources = {
+        x86_64-linux = {
+          debianArch = "amd64";
+          hash = "sha256-31xx1csNPwXWS2VNIWbKqgtDXtzJdBLUWA6VZ5nxHds=";
+        };
+        i686-linux = {
+          debianArch = "i386";
+          hash = "sha256-DZWAgEUqVXO7Nn8MLO65udnHiPjGibcYvn8Fyp9ncts=";
+        };
+      };
+      source =
+        sources.${stdenv.hostPlatform.system}
+          or (throw "remember-the-milk: unsupported system ${stdenv.hostPlatform.system}");
+    in
+    fetchurl {
+      url = "https://www.rememberthemilk.com/download/linux/debian/pool/main/r/rememberthemilk/rememberthemilk_${finalAttrs.version}_${source.debianArch}.deb";
+      inherit (source) hash;
+    };
 
   nativeBuildInputs = [
     autoPatchelfHook
@@ -119,7 +135,10 @@ stdenv.mkDerivation (finalAttrs: {
     homepage = "https://www.rememberthemilk.com";
     license = lib.licenses.unfree;
     mainProgram = "rememberthemilk";
-    platforms = [ "x86_64-linux" ];
+    platforms = [
+      "x86_64-linux"
+      "i686-linux"
+    ];
     sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
   };
 })
